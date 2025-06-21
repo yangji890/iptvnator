@@ -25,6 +25,7 @@ const DEFAULT_SETTINGS: Settings = {
     remoteControl: false,
     remoteControlPort: 3000,
     epgUrl: [],
+    flowplayerToken: '', // Added flowplayerToken
 };
 
 export const SettingsStore = signalStore(
@@ -36,19 +37,26 @@ export const SettingsStore = signalStore(
                 storage.get(STORE_KEY.Settings)
             );
             if (stored) {
-                patchState(store, {
+                // Ensure all keys from DEFAULT_SETTINGS are present, even if not in stored
+                // And flowplayerToken is correctly loaded or defaulted
+                const mergedSettings = {
                     ...DEFAULT_SETTINGS,
                     ...(stored as Settings),
-                });
+                    flowplayerToken: (stored as Settings).flowplayerToken || DEFAULT_SETTINGS.flowplayerToken,
+                };
+                patchState(store, mergedSettings);
             }
         },
 
         async updateSettings(settings: Partial<Settings>) {
-            patchState(store, settings);
-            await firstValueFrom(storage.set(STORE_KEY.Settings, settings));
+            // When updating, ensure we save the complete current state of settings from the store
+            // merged with the new partial settings, to avoid losing fields not present in `settings` param.
+            const newSettings = { ...store, ...settings };
+            patchState(store, newSettings); // Update the in-memory store state
+            await firstValueFrom(storage.set(STORE_KEY.Settings, newSettings)); // Persist the complete new state
         },
 
-        getSettings() {
+        getSettings(): Settings { // Return type changed to Settings
             return {
                 player: store.player(),
                 streamFormat: store.streamFormat(),
@@ -60,6 +68,7 @@ export const SettingsStore = signalStore(
                 remoteControl: store.remoteControl(),
                 remoteControlPort: store.remoteControlPort(),
                 epgUrl: store.epgUrl(),
+                flowplayerToken: store.flowplayerToken(), // Added flowplayerToken
             };
         },
     })),

@@ -107,6 +107,10 @@ export class SettingsComponent implements OnInit {
             id: VideoPlayer.VideoJs,
             label: 'VideoJs Player',
         },
+        {
+            id: VideoPlayer.Flowplayer, // Added Flowplayer
+            label: 'Flowplayer',
+        },
         /* {
             id: VideoPlayer.DPlayer,
             label: 'DPlayer',
@@ -142,6 +146,7 @@ export class SettingsComponent implements OnInit {
         vlcPlayerPath: '',
         remoteControl: false,
         remoteControlPort: 3000,
+        flowplayerToken: [''], // Added flowplayerToken FormControl
     });
 
     /** Form array with epg sources */

@@ -142,6 +142,29 @@
                 </div>
             </div>
         }
+        @if (settingsForm.value.player === 'flowplayer') {
+            <div class="row">
+                <div class="column">
+                    {{ 'SETTINGS.FLOWPLAYER_TOKEN_LABEL' | translate }} <!-- Add this translation key -->
+                    <p>
+                        {{ 'SETTINGS.FLOWPLAYER_TOKEN_DESCRIPTION' | translate }} <!-- Add this translation key -->
+                    </p>
+                </div>
+                <div class="column">
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label for="flowplayerToken">{{
+                            'SETTINGS.FLOWPLAYER_TOKEN_PLACEHOLDER' | translate <!-- Add this translation key -->
+                        }}</mat-label>
+                        <input
+                            matInput
+                            type="text"
+                            id="flowplayerToken"
+                            formControlName="flowplayerToken"
+                        />
+                    </mat-form-field>
+                </div>
+            </div>
+        }
         <mat-divider />
         <div class="row">
             <div class="column">

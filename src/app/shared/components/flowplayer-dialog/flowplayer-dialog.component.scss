@@ -1,0 +1,48 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%; // Take full dialog height
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px; // Adjust padding as needed
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12); // Optional: if you want a separator
+
+  h2 {
+    margin: 0;
+    font-size: 1.25rem; // Adjust font size
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .close-button {
+    margin-left: 16px; // Space from title
+  }
+}
+
+mat-dialog-content.flowplayer-dialog-content {
+  padding: 0; // Remove padding if player should be edge-to-edge
+  margin: 0;
+  overflow: hidden; // Prevent scrollbars from dialog content itself
+  flex-grow: 1; // Allow content to take available space
+  display: flex; // To make app-flowplayer fill the space
+  background-color: #000; // Background for the player area
+
+  app-flowplayer {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+// Ensure the dialog panel itself is sized appropriately if not done by MatDialogConfig
+// This is often handled in the component that opens the dialog.
+// Example:
+// .mat-mdc-dialog-container .mdc-dialog__surface {
+//   max-width: none !important; // If you need to override Material's max-width for video dialogs
+//   width: 80vw;
+//   height: auto; // Or specific aspect ratio based height
+// }

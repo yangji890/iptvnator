@@ -7,9 +7,10 @@ import {
     PlayerDialogComponent,
     PlayerDialogData,
 } from '../xtream-tauri/player-dialog/player-dialog.component';
+import { FlowplayerDialogComponent, FlowplayerDialogData } from '../shared/components/flowplayer-dialog/flowplayer-dialog.component'; // Import Flowplayer dialog
 import { DataService } from './data.service';
 import { SettingsStore } from './settings-store.service';
-import { LoggingService } from './logging.service'; // Import LoggingService
+import { LoggingService } from './logging.service';
 import { XtreamStore } from '../xtream-tauri/xtream.store'; // To get content details
 
 @Injectable({
@@ -82,9 +83,20 @@ export class PlayerService {
                 url: streamUrl,
                 vlcPlayerPath: this.settingsStore.vlcPlayerPath(),
             });
-        } else if (!isLiveContent) { // Built-in player likely for VOD/Series
+        } else if (player === VideoPlayer.Flowplayer && !isLiveContent) {
+            this.dialog.open<FlowplayerDialogComponent, FlowplayerDialogData>(
+                FlowplayerDialogComponent,
+                {
+                    data: { streamUrl, title, token: this.settingsStore.flowplayerToken() }, // Assuming token is stored in settings
+                    width: '80%', // Or specific dimensions for video
+                    maxWidth: '1200px',
+                    maxHeight: '90vh', // Or use panelClass for custom styling
+                    panelClass: 'flowplayer-dialog-panel' // Add a class for specific styling
+                }
+            );
+        } else if (player === VideoPlayer.VideoJs && !isLiveContent) { // Default to VideoJs or other existing dialog players
             this.dialog.open<PlayerDialogComponent, PlayerDialogData>(
-                PlayerDialogComponent,
+                PlayerDialogComponent, // This is likely the Video.js dialog
                 {
                     data: { streamUrl, title },
                     width: '80%',
@@ -93,6 +105,13 @@ export class PlayerService {
                 }
             );
         }
+        // What about Html5Player, DPlayer, ArtPlayer if selected and !isLiveContent?
+        // And what about live content for VideoJs, Flowplayer, etc.?
+        // Current logic seems to only open dialogs for VOD/Series.
+        // Live content with these players might be embedded directly in a view,
+        // or would also need a dialog if that's the chosen UX.
+        // For now, this commit focuses on adding Flowplayer for VOD/Series via dialog.
+
         // Note: For live content with VideoJS/default player, it's handled directly in component,
         // so logging for that would need to be in the component that embeds the VideoJS player.
         // This service primarily handles external players or dialog-based internal players.

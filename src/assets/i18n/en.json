@@ -156,7 +156,10 @@
     "REMOTE_CONTROL": "Remote control",
     "REMOTE_CONTROL_DESCRIPTION": "Enable remote control of the application.",
     "REMOTE_CONTROL_PORT": "Remote control port",
-    "REMOTE_CONTROL_PORT_DESCRIPTION": "Port used for remote control of the application. Port 3000 is used by default."
+    "REMOTE_CONTROL_PORT_DESCRIPTION": "Port used for remote control of the application. Port 3000 is used by default.",
+    "FLOWPLAYER_TOKEN_LABEL": "Flowplayer Token",
+    "FLOWPLAYER_TOKEN_DESCRIPTION": "Enter your Flowplayer license token. Required for Flowplayer.",
+    "FLOWPLAYER_TOKEN_PLACEHOLDER": "Flowplayer Token"
   },
   "THEMES": {
     "DARK_THEME": "Dark theme",

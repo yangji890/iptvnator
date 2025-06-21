@@ -1,0 +1,9 @@
+<div class="dialog-header">
+  <h2 mat-dialog-title>{{ data.title || 'Player' }}</h2>
+  <button mat-icon-button (click)="closeDialog()" class="close-button" aria-label="Close dialog">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+<mat-dialog-content class="flowplayer-dialog-content">
+  <app-flowplayer [streamUrl]="data.streamUrl" [title]="data.title" [autoplay]="true" [token]="data.token"></app-flowplayer>
+</mat-dialog-content>

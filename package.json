@@ -39,6 +39,7 @@
     "@angular/animations": "19.2.0",
     "@angular/cdk": "19.2.1",
     "@angular/material": "19.2.1",
+    "@flowplayer/player": "3.28.1",
     "@ngrx/component-store": "19.0.1",
     "@ngrx/effects": "19.0.1",
     "@ngrx/entity": "19.0.1",

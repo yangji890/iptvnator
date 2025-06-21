@@ -1,0 +1,25 @@
+:host {
+  display: block; // Ensures the component takes up block-level space
+  width: 100%;
+  height: 100%; // Or aspect-ratio based sizing
+  background-color: #000; // Common for video players
+}
+
+.flowplayer-container {
+  width: 100%;
+  height: 100%;
+}
+
+// If Flowplayer's default CSS needs overrides or specific container styling:
+// Example: Making sure the Flowplayer UI fits well if it has absolute positioning
+.flowplayer-container ::ng-deep .fp-ui {
+  // Potential overrides if necessary, though usually not recommended to use ::ng-deep
+  // It's better if Flowplayer's own CSS handles this.
+}
+
+// Ensure the player itself (if it creates a <video> tag or similar) fills the container
+.flowplayer-container ::ng-deep video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; // Or 'cover', depending on desired behavior
+}

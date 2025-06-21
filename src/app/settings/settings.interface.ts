@@ -12,6 +12,7 @@ export enum VideoPlayer {
     VLC = 'vlc',
     DPlayer = 'dplayer',
     ArtPlayer = 'artplayer',
+    Flowplayer = 'flowplayer', // Added Flowplayer
 }
 
 /**
@@ -28,4 +29,5 @@ export interface Settings {
     vlcPlayerPath: string;
     remoteControl: boolean;
     remoteControlPort: number;
+    flowplayerToken?: string; // Added for Flowplayer token
 }
