@@ -1,32 +1,55 @@
 :host {
-    height: 100%;
-    overflow-y: auto;
-    padding: 0 10px;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-}
+    &.vertical-layout {
+        height: 100%;
+        overflow-y: auto;
+        padding: 0 10px;
+        // flex-wrap: wrap; // Not needed for vertical list
+        // gap: 10px; // Not needed for vertical list
+        // justify-content: center; // Not needed for vertical list
 
-.category-item {
-    cursor: pointer;
-    width: auto;
-    transition: all 0.2s ease;
+        .category-item {
+            cursor: pointer;
+            width: auto; // Let mat-list-item define its width
+            transition: all 0.2s ease;
 
-    &.selected {
-        background-color: rgba(63, 81, 181, 0.1);
-        border-left: 4px solid #3f51b5;
-        margin-left: 4px;
+            &.selected {
+                background-color: rgba(63, 81, 181, 0.1); // Use theme variable if possible
+                border-left: 4px solid var(--primary-color, #3f51b5); // Use theme variable
+                // margin-left: 4px; // Let border define offset or use padding
+                padding-left: calc(16px - 4px); // Standard padding minus border width
+            }
+        }
+
+        @media (max-width: 800px) {
+            .category-item {
+                width: 100%; // Full width on smaller screens for vertical items
+                // margin: 4px 0; // Adjust margin for vertical layout
+            }
+        }
+    }
+
+    &.horizontal-layout {
+        display: flex; // Needed for horizontal layout of chips
+        overflow-x: auto; // Allow horizontal scrolling for chips
+        padding: 8px 16px; // Padding around the chip list
+        gap: 8px; // Space between chips
+        justify-content: flex-start; // Align chips to the start, can be center if preferred
+
+        .category-chip-list {
+            display: flex;
+            flex-wrap: nowrap; // Ensure chips stay in one line for scrolling
+        }
+
+        .category-chip {
+            cursor: pointer;
+            // Use default chip styling, selected state is handled by mat-chip-option
+        }
     }
 }
 
+// Common styles for mat-card-content if it's used within this component,
+// otherwise, it might be from a parent or child component.
 mat-card-content {
     overflow-wrap: break-word;
     padding: 12px;
-}
-
-@media (max-width: 800px) {
-    .category-item {
-        width: 100%;
-        margin: 4px;
-    }
 }

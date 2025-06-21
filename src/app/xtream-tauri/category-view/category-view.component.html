@@ -1,26 +1,52 @@
 @if (items()?.length > 0) {
-    <mat-nav-list>
-        @for (item of items(); track $index) {
-            <mat-list-item
-                class="category-item"
-                [class.selected]="isSelected(item)"
-                (click)="categoryClicked.emit(item)"
-            >
-                {{
-                    item.category_name || $any(item).name || 'No category name'
-                }}
-            </mat-list-item>
-        } @empty {
-            <app-playlist-error-view
-                [title]="'PORTALS.EMPTY_LIST_VIEW.TITLE' | translate"
-                [description]="
-                    'PORTALS.EMPTY_LIST_VIEW.NO_SEARCH_RESULTS' | translate
-                "
-                [showActionButtons]="false"
-                [viewType]="'NO_SEARCH_RESULTS'"
-            />
-        }
-    </mat-nav-list>
+    @if (layout() === 'vertical') {
+        <mat-nav-list>
+            @for (item of items(); track $index) {
+                <mat-list-item
+                    class="category-item"
+                    [class.selected]="isSelected(item)"
+                    (click)="categoryClicked.emit(item)"
+                >
+                    {{
+                        item.category_name || $any(item).name || 'No category name'
+                    }}
+                </mat-list-item>
+            } @empty {
+                <app-playlist-error-view
+                    [title]="'PORTALS.EMPTY_LIST_VIEW.TITLE' | translate"
+                    [description]="
+                        'PORTALS.EMPTY_LIST_VIEW.NO_SEARCH_RESULTS' | translate
+                    "
+                    [showActionButtons]="false"
+                    [viewType]="'NO_SEARCH_RESULTS'"
+                />
+            }
+        </mat-nav-list>
+    } @else if (layout() === 'horizontal') {
+        <mat-chip-listbox class="category-chip-list" aria-label="Category selection">
+            @for (item of items(); track $index) {
+                <mat-chip-option
+                    class="category-chip"
+                    [selected]="isSelected(item)"
+                    (click)="categoryClicked.emit(item)"
+                    color="primary"
+                >
+                    {{
+                        item.category_name || $any(item).name || 'No category name'
+                    }}
+                </mat-chip-option>
+            } @empty {
+                <app-playlist-error-view
+                    [title]="'PORTALS.EMPTY_LIST_VIEW.TITLE' | translate"
+                    [description]="
+                        'PORTALS.EMPTY_LIST_VIEW.NO_SEARCH_RESULTS' | translate
+                    "
+                    [showActionButtons]="false"
+                    [viewType]="'NO_SEARCH_RESULTS'"
+                />
+            }
+        </mat-chip-listbox>
+    }
 } @else {
     <app-playlist-error-view
         [title]="'PORTALS.ERROR_VIEW.EMPTY_CATEGORY.TITLE' | translate"

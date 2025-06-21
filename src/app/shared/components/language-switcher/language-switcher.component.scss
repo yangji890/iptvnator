@@ -1,0 +1,40 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+}
+
+button[mat-icon-button] {
+  display: flex;
+  align-items: center;
+  gap: 4px; /* Space between icon and text */
+}
+
+.current-lang-code {
+  font-size: 0.8em;
+  font-weight: bold;
+  margin-left: 2px; /* Small margin from the icon */
+}
+
+.mat-mdc-menu-item {
+  min-width: 150px; /* Adjust as needed */
+}
+
+.selected-check {
+  margin-left: auto; /* Pushes the check icon to the right */
+  font-size: 1.1em;
+  color: var(--primary-color); /* Use theme primary color */
+}
+
+/* Ensure the button itself doesn't have excessive padding if it's just an icon + small text */
+button.mdc-icon-button {
+    padding: 8px;
+}
+
+/* Style for the text next to the icon, if not using mat-icon-button's built-in capabilities well */
+.mat-mdc-button-persistent-icon + .mat-mdc-button-touch-target {
+    display: flex;
+    align-items: center;
+}
+span.current-lang-code {
+    line-height: normal; /* Adjust if text is not vertically centered with icon */
+}

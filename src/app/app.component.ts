@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core'; // Added inject
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
@@ -9,7 +9,7 @@ import { ask } from '@tauri-apps/plugin-dialog';
 import { relaunch } from '@tauri-apps/plugin-process';
 import { check } from '@tauri-apps/plugin-updater';
 import { ModalWindow } from 'ngx-whats-new/lib/modal-window.interface';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, take } from 'rxjs'; // Added take
 import * as semver from 'semver';
 import { IpcCommand } from '../../shared/ipc-command.class';
 import {
@@ -26,6 +26,7 @@ import { EpgService } from './services/epg.service';
 import { PlaylistsService } from './services/playlists.service';
 import { SettingsService } from './services/settings.service';
 import { WhatsNewService } from './services/whats-new.service';
+import { LanguageDetectionService } from './services/language-detection.service'; // Import LanguageDetectionService
 import { Language } from './settings/language.enum';
 import { Settings } from './settings/settings.interface';
 import { Theme } from './settings/theme.enum';
@@ -63,6 +64,9 @@ export class AppComponent {
     DEFAULT_LANG = Language.ENGLISH;
 
     listeners = [];
+
+    // Use inject for LanguageDetectionService if preferred, or keep in constructor
+    private languageDetectionService = inject(LanguageDetectionService);
 
     constructor(
         private dataService: DataService,
@@ -112,15 +116,67 @@ export class AppComponent {
 
     ngOnInit() {
         this.store.dispatch(PlaylistActions.loadPlaylists());
-        this.translate.setDefaultLang(this.DEFAULT_LANG);
+        this.translate.setDefaultLang(this.DEFAULT_LANG); // Set default lang first
+
+        // Initialize language, then other settings
+        this.languageDetectionService.detectInitialLanguage().pipe(take(1)).subscribe(lang => {
+            this.translate.use(lang);
+            // Optionally, update settingsService if it also stores language
+            this.settingsService.getValueFromLocalStorage(STORE_KEY.Settings).pipe(take(1)).subscribe(settings => {
+                const currentSettings = settings || {};
+                if (currentSettings.language !== lang) {
+                    this.settingsService.setValueToLocalStorage(STORE_KEY.Settings, {...currentSettings, language: lang });
+                }
+            });
+
+            // Proceed with other settings initialization that might depend on language or other settings
+            this.initSettingsDependentOnLanguage(lang);
+        });
+
 
         this.setRendererListeners();
-        this.initSettings();
+        // this.initSettings(); // This is now partly handled by the language detection flow
         this.handleWhatsNewDialog();
 
         this.triggerAutoUpdateMechanism();
         this.checkForUpdates();
     }
+
+    // Renamed and modified to be called after language is set
+    initSettingsDependentOnLanguage(currentLang: string): void {
+        this.settingsService
+            .getValueFromLocalStorage(STORE_KEY.Settings)
+            .pipe(take(1)) // take(1) to prevent multiple subscriptions if settings change later
+            .subscribe((settings: Settings) => {
+                if (settings && Object.keys(settings).length > 0) {
+                    this.dataService.sendIpcEvent(SETTINGS_UPDATE, settings);
+                    // Language is already set by detectInitialLanguage, but ensure consistency if settings has a different one
+                    // This should ideally not happen if LanguageDetectionService correctly prioritizes stored user preference
+                    if (settings.language && settings.language !== currentLang) {
+                         this.translate.use(settings.language);
+                         this.languageDetectionService.setStoredLanguage(settings.language); // Update storage if settings had a different one
+                    }
+
+                    if (
+                        settings.epgUrl?.length > 0 &&
+                        settings.epgUrl?.some((u) => u !== '') &&
+                        isTauri()
+                    ) {
+                        this.epgService.fetchEpg(settings.epgUrl);
+                    }
+
+                    if (settings.theme) {
+                        this.settingsService.changeTheme(settings.theme);
+                    } else {
+                        this.detectDarkMode();
+                    }
+                } else {
+                    // No settings found, apply defaults
+                    this.detectDarkMode();
+                }
+            });
+    }
+
 
     async checkForUpdates() {
         if (isTauri()) {
@@ -196,31 +252,31 @@ export class AppComponent {
      * Reads the settings object from local storage and initializes the
      * application based on them
      */
-    initSettings(): void {
-        this.settingsService
-            .getValueFromLocalStorage(STORE_KEY.Settings)
-            .subscribe((settings: Settings) => {
-                if (settings && Object.keys(settings).length > 0) {
-                    this.dataService.sendIpcEvent(SETTINGS_UPDATE, settings);
-                    this.translate.use(settings.language ?? this.DEFAULT_LANG);
-                    if (
-                        settings.epgUrl?.length > 0 &&
-                        settings.epgUrl?.some((u) => u !== '') &&
-                        isTauri()
-                    ) {
-                        this.epgService.fetchEpg(settings.epgUrl);
-                    }
+    // initSettings(): void {
+    //     this.settingsService
+    //         .getValueFromLocalStorage(STORE_KEY.Settings)
+    //         .subscribe((settings: Settings) => {
+    //             if (settings && Object.keys(settings).length > 0) {
+    //                 this.dataService.sendIpcEvent(SETTINGS_UPDATE, settings);
+    //                 this.translate.use(settings.language ?? this.DEFAULT_LANG);
+    //                 if (
+    //                     settings.epgUrl?.length > 0 &&
+    //                     settings.epgUrl?.some((u) => u !== '') &&
+    //                     isTauri()
+    //                 ) {
+    //                     this.epgService.fetchEpg(settings.epgUrl);
+    //                 }
 
-                    if (settings.theme) {
-                        this.settingsService.changeTheme(settings.theme);
-                    } else {
-                        this.detectDarkMode();
-                    }
-                } else {
-                    this.detectDarkMode();
-                }
-            });
-    }
+    //                 if (settings.theme) {
+    //                     this.settingsService.changeTheme(settings.theme);
+    //                 } else {
+    //                     this.detectDarkMode();
+    //                 }
+    //             } else {
+    //                 this.detectDarkMode();
+    //             }
+    //         });
+    // }
 
     /**
      * Detects if the operation system uses dark mode and changes the theme
@@ -244,6 +300,7 @@ export class AppComponent {
         const actualVersion = this.dataService.getAppVersion();
         this.settingsService
             .getValueFromLocalStorage(STORE_KEY.Version)
+            .pipe(take(1))
             .subscribe((version: string) => {
                 const isNewVersion = semver.gt(
                     actualVersion,

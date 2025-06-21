@@ -268,7 +268,8 @@
     "YEAR": "Year",
     "AGE": "Age",
     "YOUTUBE_TRAILER": "YouTube Trailer",
-    "EPISODE": "Episode"
+    "EPISODE": "Episode",
+    "SEARCH_PLACEHOLDER": "Search channels, movies, series..."
   },
   "PORTALS": {
     "ALL_CATEGORIES": "All categories",

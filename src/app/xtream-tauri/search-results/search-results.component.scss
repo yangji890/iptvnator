@@ -25,8 +25,13 @@
     }
 
     .type-filters {
+        display: flex; // Added to allow wrapping or column direction
+        flex-wrap: wrap; // Allow filters to wrap on smaller screens
+        gap: 8px; // Add some gap for wrapped items
+        margin-top: 8px; // Add some space above filters
+        margin-bottom: 8px; // Add some space below filters
         mat-checkbox {
-            margin-right: 1rem;
+            margin-right: 1rem; // Keep existing margin for non-wrapped items
         }
     }
 

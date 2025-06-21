@@ -1,33 +1,82 @@
 :host {
-    display: flex;
-    flex-direction: row;  // Changed from column to row
-    overflow: hidden;
-    height: 100%;
-    width: 100%;  // Added to ensure full width
+  display: flex;
+  flex-direction: column; // Changed to column for top-to-bottom layout
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
 }
 
-.main-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0; // Important for proper flex behavior
+.main-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  background-color: var(--toolbar-background-color); // Using theme variable
+  gap: 16px; // Space between search and language switcher
+
+  @media (max-width: 600px) {
+    gap: 8px; // Reduce gap on smaller screens
+    padding: 8px 12px; // Reduce padding as well, horizontal more than vertical
+  }
+}
+
+.search-bar-container {
+  flex-grow: 1;
+  min-width: 0; // Allow search bar to shrink effectively
+}
+
+.global-search-field {
+  width: 100%;
+}
+
+.language-switcher-container {
+  flex-shrink: 0; // Prevent language switcher from being overly compressed
+}
+
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; // Important for proper flex behavior
+  overflow-y: auto; // Allow content area to scroll if needed, not individual parts
 }
 
 .content-header {
-    padding: 16px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 16px;
+  // border-bottom: 1px solid rgba(0, 0, 0, 0.12); // Removed as top-bar has a border
 
-    h2 {
-        margin: 0;
-        font-size: 1.2rem;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
+  h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
 }
 
 .scrollable-content {
-    flex: 1;
-    overflow-y: auto;
+  flex: 1;
+  // overflow-y: auto; // Moved scrolling to content-area
+}
+
+.bottom-navigation {
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 8px 0; // Add some padding
+  background-color: var(--toolbar-background-color); // Using theme variable
+
+  // Assuming app-category-view will handle its internal layout
+  // We might need to adjust its styles if it doesn't display horizontally well.
+}
+
+// Ensure mpv-player-bar is not pushed out of view
+app-mpv-player-bar {
+    position: relative; // Or adjust layout as needed
 }
