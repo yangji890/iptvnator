@@ -1,5 +1,4 @@
-import { HttpClient } from '@angular/common/http';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http'; // Keep only one import
 import { inject, Injectable } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Params } from '@angular/router';
@@ -18,22 +17,21 @@ import {
     XTREAM_RESPONSE,
 } from '../../../shared/ipc-commands';
 import { Playlist } from '../../../shared/playlist.interface';
-// AppConfig from environments is no longer the source of BACKEND_URL
-// import { AppConfig } from '../../environments/environment';
+import { AppConfig } from '../../environments/environment'; // Re-add AppConfig import for version
 import * as PlaylistActions from '../state/actions';
 import { DataService } from './data.service';
-import { AppConfigService } from './app-config.service'; // Import AppConfigService
+import { AppConfigService } from './app-config.service';
 
 @Injectable({
     providedIn: 'root',
 })
 export class PwaService extends DataService {
-    private readonly http = inject(HttpClient); // Corrected: ensure HttpClient is imported once
+    private readonly http = inject(HttpClient);
     private readonly snackBar = inject(MatSnackBar);
     private readonly store = inject(Store);
     private readonly swUpdate = inject(SwUpdate);
     private readonly translateService = inject(TranslateService);
-    private readonly appConfigService = inject(AppConfigService); // Inject AppConfigService
+    private readonly appConfigService = inject(AppConfigService);
 
     /** Proxy URL to avoid CORS issues */
     corsProxyUrl: string;
@@ -60,7 +58,7 @@ export class PwaService extends DataService {
     }
 
     getAppVersion(): string {
-        return AppConfig.version;
+        return AppConfig.version; // AppConfig.version should now be accessible
     }
 
     /**
