@@ -16,7 +16,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { StorageMap } from '@ngx-pwa/local-storage';
-import { Observable, combineLatestWith, filter, map, switchMap } from 'rxjs';
+import { Observable, Subject, combineLatestWith, filter, map, switchMap, takeUntil } from 'rxjs'; // Added Subject and takeUntil
 import { Channel } from '../../../../../shared/channel.interface';
 import {
     CHANNEL_SET_USER_AGENT,
@@ -134,6 +134,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
     volume = 1;
 
     private settingsStore = inject(SettingsStore);
+    private destroy$ = new Subject<void>(); // Added destroy$ Subject
 
     constructor(
         private activatedRoute: ActivatedRoute,
@@ -180,6 +181,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
                     );
                     return this.playlistsService.getPlaylist(params.id).pipe(
                         map((playlist) => {
+                            if (!playlist) return []; // Handle case where playlist is not found
                             this.dataService.sendIpcEvent(
                                 CHANNEL_SET_USER_AGENT,
                                 playlist.userAgent
@@ -192,16 +194,19 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
 
                             this.store.dispatch(
                                 PlaylistActions.setChannels({
-                                    channels: playlist.playlist.items,
+                                    channels: playlist.playlist?.items || [],
                                 })
                             );
-                            return playlist.playlist.items;
-                        })
+                            return playlist.playlist?.items || [];
+                        }),
+                        takeUntil(this.destroy$) // Automatically unsubscribe on component destroy
                     );
                 } else if (queryParams.url) {
-                    return this.store.select(selectChannels);
+                    return this.store.select(selectChannels).pipe(takeUntil(this.destroy$));
                 }
-            })
+                return []; // Return an empty array or an Observable of an empty array if no condition met
+            }),
+            takeUntil(this.destroy$) // Also apply to the outer stream
         );
     }
 
@@ -244,7 +249,9 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
      * Reads the app configuration from the browsers storage and applies the settings in the current component
      */
     applySettings(): void {
-        this.storage.get(STORE_KEY.Settings).subscribe((settings: Settings) => {
+        this.storage.get(STORE_KEY.Settings)
+        .pipe(takeUntil(this.destroy$)) // Automatically unsubscribe
+        .subscribe((settings: Settings) => {
             if (settings && Object.keys(settings).length > 0) {
                 this.playerSettings = {
                     player: settings.player || VideoPlayer.VideoJs,
@@ -255,6 +262,8 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy() {
+        this.destroy$.next(); // Emit a value to trigger takeUntil
+        this.destroy$.complete(); // Complete the subject
         this.listeners.forEach((listener) =>
             window.removeEventListener('message', listener)
         );

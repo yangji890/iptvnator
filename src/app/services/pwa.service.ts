@@ -1,4 +1,5 @@
 import { HttpClient } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Params } from '@angular/router';
@@ -17,26 +18,30 @@ import {
     XTREAM_RESPONSE,
 } from '../../../shared/ipc-commands';
 import { Playlist } from '../../../shared/playlist.interface';
-import { AppConfig } from '../../environments/environment';
+// AppConfig from environments is no longer the source of BACKEND_URL
+// import { AppConfig } from '../../environments/environment';
 import * as PlaylistActions from '../state/actions';
 import { DataService } from './data.service';
+import { AppConfigService } from './app-config.service'; // Import AppConfigService
 
 @Injectable({
     providedIn: 'root',
 })
 export class PwaService extends DataService {
-    private readonly http = inject(HttpClient);
+    private readonly http = inject(HttpClient); // Corrected: ensure HttpClient is imported once
     private readonly snackBar = inject(MatSnackBar);
     private readonly store = inject(Store);
     private readonly swUpdate = inject(SwUpdate);
     private readonly translateService = inject(TranslateService);
+    private readonly appConfigService = inject(AppConfigService); // Inject AppConfigService
 
     /** Proxy URL to avoid CORS issues */
-    corsProxyUrl = AppConfig.BACKEND_URL;
+    corsProxyUrl: string;
 
     constructor() {
         super();
-        console.log('PWA service initialized...');
+        this.corsProxyUrl = this.appConfigService.getBackendUrl();
+        console.log('PWA service initialized... CORS Proxy URL:', this.corsProxyUrl);
     }
 
     /** Uses service worker mechanism to check for available application updates */
@@ -233,11 +238,22 @@ export class PwaService extends DataService {
         });
     }
 
-    removeAllListeners(): void {
-        // not implemented
+    removeAllListeners(type: string): void {
+        // This method is part of the DataService abstract class.
+        // In PwaService, listenOn uses window.addEventListener.
+        // The AppComponent itself stores and removes these specific listeners.
+        // If this service were to manage its own event listeners in a way that
+        // required type-based removal, this method would need to implement that.
+        // For now, as listeners are managed by the component that adds them,
+        // this specific method might not have a direct role for those listeners.
+        console.warn(
+            `DataService.removeAllListeners called with type "${type}" in PwaService. This implementation of listenOn uses window.addEventListener, and calling components are expected to manage their own listener removal.`
+        );
     }
 
     listenOn(_command: string, callback: (...args: any[]) => void): void {
+        // PWA service uses window.postMessage for some IPC-like communication (e.g., from service worker or other contexts)
+        // and window.addEventListener for the main app to listen.
         window.addEventListener('message', callback);
     }
 

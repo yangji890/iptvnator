@@ -8,6 +8,11 @@ import {
 import { DatabaseService } from '../services/database.service';
 import { FavoritesService } from './services/favorites.service';
 
+// Define an interface for the expected query result
+interface ContentIdQueryResult {
+    id: number; // Assuming content.id from the database is a number
+}
+
 export const withFavorites = function () {
     return signalStoreFeature(
         withState({
@@ -25,19 +30,20 @@ export const withFavorites = function () {
 
                     const db = await dbService.getConnection();
 
-                    const content: any = await db.select(
+                    // Use the defined interface for the select query result
+                    const contentResults = await db.select<ContentIdQueryResult[]>(
                         'SELECT content.id FROM content ' +
                             'INNER JOIN categories ON content.category_id = categories.id ' +
                             'WHERE content.xtream_id = ? AND categories.playlist_id = ?',
                         [xtreamId, playlistId]
                     );
 
-                    if (!content || content.length === 0) {
-                        console.error('Content not found in database');
-                        return;
+                    if (!contentResults || contentResults.length === 0) {
+                        console.error(`Content with xtreamId ${xtreamId} not found in database for playlist ${playlistId}`);
+                        return false; // Return a boolean to indicate failure or no-op
                     }
 
-                    const contentId = content[0].id;
+                    const contentId = contentResults[0].id; // contentId is now typed as number
                     const isFavorite = await favoritesService.isFavorite(
                         xtreamId,
                         playlistId

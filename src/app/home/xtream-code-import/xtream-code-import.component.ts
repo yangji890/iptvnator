@@ -79,7 +79,8 @@ import { take } from 'rxjs';
 })
 export class XtreamCodeImportComponent implements OnInit {
     @Output() addClicked = new EventEmitter<void>();
-    URL_REGEX = /^(http|https|file):\/\/[^ "]+$/;
+    // Updated URL_REGEX for stricter validation as per code review suggestion
+    URL_REGEX = /^(https?|file):\/\/(?:(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}|localhost)(?::\d{1,5})?(?:\/[^"]*)?$/;
 
     form = new FormGroup({
         _id: new FormControl(uuid()),

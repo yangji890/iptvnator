@@ -254,13 +254,25 @@ export class TauriService extends DataService {
     }
 
     removeAllListeners(type: string): void {
-        console.error(
-            'Method not implemented. Following type was provided:',
-            type
+        // This method is part of the DataService abstract class.
+        // In TauriService, listenOn uses window.addEventListener.
+        // The AppComponent itself stores and removes these specific listeners.
+        // If direct tauri events (e.g., appWindow.listen) were used and stored globally
+        // or managed by this service in a way that required type-based removal,
+        // this method would need to unlisten them.
+        // For now, as listeners are managed by the component that adds them via window.addEventListener,
+        // this specific method might not have a direct role for those listeners.
+        console.warn(
+            `DataService.removeAllListeners called with type "${type}" in TauriService. This implementation of listenOn uses window.addEventListener, and calling components are expected to manage their own listener removal. If this service were to manage its own event listeners (e.g., via appWindow.listen), their cleanup would happen here.`
         );
     }
 
     listenOn(command: string, callback: (...args: any[]) => void): void {
+        // For IPC-like messages from Tauri core to webview, if not using direct invoke/response,
+        // one might use Tauri events (listen/emit from @tauri-apps/api/event).
+        // The current implementation uses window.postMessage (from sendIpcEvent within Tauri Rust to trigger window events)
+        // and window.addEventListener for the webview to listen.
+        // This is a valid, albeit less "Tauri-idiomatic" for backend-to-frontend events, way if messages are posted to the window.
         window.addEventListener('message', callback);
     }
 

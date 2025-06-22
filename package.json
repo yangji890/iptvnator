@@ -30,7 +30,7 @@
     "e2e": "npm run build:prod && npx playwright test --ui",
     "e2e:ci": "npx playwright test --retries 3 --workers=1",
     "version": "conventional-changelog -i CHANGELOG.md -p angular -s -r 0 && git add CHANGELOG.md",
-    "lint": "ng lint",
+    "lint": "eslint . --config eslint.config.mjs",
     "build-pwa": "ng build -c production --base-href /iptvnator --deploy-url /iptvnator/",
     "tauri": "tauri"
   },

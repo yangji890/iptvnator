@@ -24,35 +24,68 @@ import { WhatsNewServiceStub } from './services/whats-new.service.stub';
 import { Language } from './settings/language.enum';
 import { Theme } from './settings/theme.enum';
 import { STORE_KEY } from './shared/enums/store-keys.enum';
+import { of } from 'rxjs'; // Ensure 'of' is imported for mock services
+import { AUTO_UPDATE_PLAYLISTS } from '../../shared/ipc-commands';
+import { PlaylistMeta } from './shared/playlist-meta.type'; // Assuming PlaylistMeta path
+
+// Mock isTauri from @tauri-apps/api/core
+jest.mock('@tauri-apps/api/core', () => ({
+    ...jest.requireActual('@tauri-apps/api/core'), // Preserve other exports
+    isTauri: jest.fn(),
+}));
+import { isTauri } from '@tauri-apps/api/core'; // Import the mocked version
 
 jest.spyOn(global.console, 'error').mockImplementation(() => {});
 
 describe('AppComponent', () => {
     let component: AppComponent;
-    let electronService: DataService;
+    let dataService: DataService; // Renamed from electronService for clarity, though it's DataService
     let fixture: ComponentFixture<AppComponent>;
     let settingsService: SettingsService;
     let translateService: TranslateService;
     let whatsNewService: WhatsNewService;
     const defaultLanguage = 'en';
 
+    let playlistsService: PlaylistsService; // Added playlistsService
+    let mockIsTauri: jest.Mock; // For controlling isTauri mock
+
+    // Mocks for services not fully covered by MockProviders or needing specific spies
+    class MockDataServiceStub {
+        getAppVersion = jest.fn().mockReturnValue('1.0.0');
+        sendIpcEvent = jest.fn();
+        listenOn = jest.fn();
+        removeAllListeners = jest.fn();
+        getAppEnvironment = jest.fn().mockReturnValue('tauri');
+        isElectron = false;
+        remote = { process: { platform: 'linux', argv: [] } };
+    }
+
+    class MockPlaylistsServiceStub {
+        getPlaylistsForAutoUpdate = jest.fn().mockReturnValue(of([]));
+    }
+
+
     beforeEach(waitForAsync(() => {
         TestBed.configureTestingModule({
             declarations: [AppComponent, MockPipe(TranslatePipe)],
             providers: [
                 { provide: WhatsNewService, useClass: WhatsNewServiceStub },
-                MockProviders(
+                { provide: DataService, useClass: MockDataServiceStub }, // Use more specific mock
+                { provide: PlaylistsService, useClass: MockPlaylistsServiceStub }, // Use more specific mock
+                MockProviders( // These are fine if default mock behavior is okay
                     TranslateService,
-                    PlaylistsService,
                     NgxIndexedDBService,
-                    MatSnackBar
+                    MatSnackBar,
+                    SettingsService, // SettingsService can be mocked more specifically if needed
+                    EpgService,      // Added EpgService
+                    MatDialog,       // Added MatDialog
+                    Router,          // Added Router (RouterTestingModule is in imports)
+                    Store            // Added Store (provideMockStore handles this)
                 ),
-                SettingsService,
-                {
-                    provide: DataService,
-                    useClass: ElectronServiceStub,
-                },
-                provideMockStore(),
+                provideMockStore(), // For NgRx Store
+                // LanguageDetectionService needs to be mocked if AppComponent uses it directly in constructor/ngOnInit for tested logic
+                // Based on current AppComponent, it's injected via inject() so might be harder to mock globally here
+                // or provide a specific mock. For triggerAutoUpdateMechanism, it's not directly used.
             ],
             imports: [
                 MockModule(MatSnackBarModule),
@@ -64,17 +97,19 @@ describe('AppComponent', () => {
     }));
 
     beforeEach(() => {
-        electronService = TestBed.inject(DataService);
         fixture = TestBed.createComponent(AppComponent);
+        component = fixture.componentInstance;
+        dataService = TestBed.inject(DataService);
+        playlistsService = TestBed.inject(PlaylistsService);
         settingsService = TestBed.inject(SettingsService);
         translateService = TestBed.inject(TranslateService);
         whatsNewService = TestBed.inject(WhatsNewService);
-        component = fixture.componentInstance;
+        mockIsTauri = isTauri as jest.Mock; // Assign the mocked import
 
-        // TODO: investigate in detail
-        component.triggerAutoUpdateMechanism = jest.fn();
+        // DO NOT mock component.triggerAutoUpdateMechanism here if we want to test its actual implementation
+        // component.triggerAutoUpdateMechanism = jest.fn(); // REMOVE THIS LINE for the new tests
         component.modals = [];
-        component.checkForUpdates = jest.fn();
+        component.checkForUpdates = jest.fn(); // Keep this mocked if not testing it now
         fixture.detectChanges();
     });
 
@@ -248,6 +283,57 @@ describe('AppComponent', () => {
             expect(settingsService.changeTheme).toHaveBeenCalledWith(theme);
             expect(electronService.sendIpcEvent).toHaveBeenCalledTimes(1);
             expect(translateService.use).toHaveBeenCalledWith(defaultLanguage);
+        });
+    });
+
+    // New describe block for triggerAutoUpdateMechanism
+    describe('triggerAutoUpdateMechanism', () => {
+        beforeEach(() => {
+            // Ensure isTauri mock is reset before each test in this block
+            mockIsTauri.mockReset();
+            // Reset spies on services if they are called in multiple tests
+            (playlistsService.getPlaylistsForAutoUpdate as jest.Mock).mockClear();
+            (dataService.sendIpcEvent as jest.Mock).mockClear();
+        });
+
+        it('should do nothing if not in Tauri environment', async () => {
+            mockIsTauri.mockReturnValue(false);
+
+            await component.triggerAutoUpdateMechanism();
+
+            expect(playlistsService.getPlaylistsForAutoUpdate).not.toHaveBeenCalled();
+            expect(dataService.sendIpcEvent).not.toHaveBeenCalled();
+        });
+
+        it('should send IPC event if in Tauri environment and playlists are available for auto-update', async () => {
+            mockIsTauri.mockReturnValue(true);
+            const mockPlaylists: Partial<PlaylistMeta>[] = [{ _id: '1', title: 'Test Playlist', autoRefresh: true }];
+            (playlistsService.getPlaylistsForAutoUpdate as jest.Mock).mockReturnValue(of(mockPlaylists));
+
+            await component.triggerAutoUpdateMechanism();
+
+            expect(playlistsService.getPlaylistsForAutoUpdate).toHaveBeenCalled();
+            expect(dataService.sendIpcEvent).toHaveBeenCalledWith(AUTO_UPDATE_PLAYLISTS, mockPlaylists);
+        });
+
+        it('should not send IPC event if in Tauri environment but no playlists for auto-update', async () => {
+            mockIsTauri.mockReturnValue(true);
+            (playlistsService.getPlaylistsForAutoUpdate as jest.Mock).mockReturnValue(of([])); // No playlists
+
+            await component.triggerAutoUpdateMechanism();
+
+            expect(playlistsService.getPlaylistsForAutoUpdate).toHaveBeenCalled();
+            expect(dataService.sendIpcEvent).not.toHaveBeenCalled();
+        });
+
+        it('should not send IPC event if in Tauri environment but playlists are null for auto-update', async () => {
+            mockIsTauri.mockReturnValue(true);
+            (playlistsService.getPlaylistsForAutoUpdate as jest.Mock).mockReturnValue(of(null)); // Playlists result is null
+
+            await component.triggerAutoUpdateMechanism();
+
+            expect(playlistsService.getPlaylistsForAutoUpdate).toHaveBeenCalled();
+            expect(dataService.sendIpcEvent).not.toHaveBeenCalled();
         });
     });
 });

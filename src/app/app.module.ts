@@ -3,7 +3,7 @@ import {
     provideHttpClient,
     withInterceptorsFromDi,
 } from '@angular/common/http';
-import { NgModule } from '@angular/core';
+import { APP_INITIALIZER, NgModule } from '@angular/core'; // Added APP_INITIALIZER
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ServiceWorkerModule } from '@angular/service-worker';
@@ -23,6 +23,7 @@ import '../polyfills';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { dbConfig } from './indexed-db.config';
+import { AppConfigService } from './services/app-config.service'; // Import AppConfigService
 import { DataService } from './services/data.service';
 import { PwaService } from './services/pwa.service';
 import { TauriService } from './services/tauri.service';
@@ -89,6 +90,13 @@ export function DataFactory() {
             deps: [NgxIndexedDBService, HttpClient],
         },
         provideHttpClient(withInterceptorsFromDi()),
+        AppConfigService, // Add service to providers
+        {
+            provide: APP_INITIALIZER,
+            useFactory: (configService: AppConfigService) => () => configService.loadAppConfig(),
+            deps: [AppConfigService],
+            multi: true,
+        },
     ],
 })
 export class AppModule {}

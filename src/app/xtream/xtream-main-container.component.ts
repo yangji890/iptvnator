@@ -426,6 +426,13 @@ export class XtreamMainContainerComponent implements OnInit {
     breadcrumbClicked(breadcrumb: Breadcrumb) {
         const itemIndex = this.breadcrumbs.findIndex((i) => i === breadcrumb);
 
+        if (itemIndex === -1) {
+            console.error('Breadcrumb not found:', breadcrumb);
+            // Optionally, you could reset to a default state or show a user notification
+            // For now, just logging and returning to prevent further errors.
+            return;
+        }
+
         // do nothing if last breadcrumb child was clicked
         if (itemIndex === this.breadcrumbs.length - 1) return;
         this.items = [];

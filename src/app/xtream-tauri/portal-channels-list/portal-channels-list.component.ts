@@ -20,9 +20,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from '@angular/material/list';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar'; // Added MatSnackBar & MatSnackBarModule
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core'; // Added TranslateService
 import { XtreamCategory } from '../../../../shared/xtream-category.interface';
 import { XtreamItem } from '../../../../shared/xtream-item.interface';
 import { FilterPipe } from '../../shared/pipes/filter.pipe';
@@ -55,6 +56,7 @@ interface EpgProgram {
         MatInputModule,
         TranslateModule,
         MatTooltipModule,
+        MatSnackBarModule, // Added MatSnackBarModule to imports
     ]
 })
 export class PortalChannelsListComponent implements AfterViewInit {
@@ -63,21 +65,28 @@ export class PortalChannelsListComponent implements AfterViewInit {
     readonly xtreamStore = inject(XtreamStore);
     private readonly favoritesService = inject(FavoritesService);
     private readonly route = inject(ActivatedRoute);
+    private readonly snackBar = inject(MatSnackBar); // Injected MatSnackBar
+    private readonly translate = inject(TranslateService); // Injected TranslateService
     readonly channels = this.xtreamStore.selectItemsFromSelectedCategory;
 
     favorites = new Map<number, boolean>();
     searchString = signal<string>('');
     currentPrograms = new Map<number, string>();
     currentProgramsProgress = new Map<number, number>();
-    programTimings = new Map<number, { start: number; end: number }>(); // Changed to store timestamps
+    programTimings = new Map<number, { start: number; end: number }>();
     private requestedChannels = new Set<number>();
+    private epgLoadRetries = new Map<number, number>(); // For retry mechanism
+    private readonly MAX_EPG_RETRIES = 2;
+    private cachedNow: number | null = null; // For debouncing Date.now() calls
+    private animationFrameId: number | null = null; // To manage requestAnimationFrame
+
 
     @ViewChild(CdkVirtualScrollViewport) viewport?: CdkVirtualScrollViewport;
 
     constructor(private cdr: ChangeDetectorRef) {}
 
     trackBy(_index: number, item: XtreamItem) {
-        return item.xtream_id;
+        return item.xtream_id; // Assuming xtream_id is unique and stable
     }
 
     ngOnInit(): void {
@@ -142,18 +151,44 @@ export class PortalChannelsListComponent implements AfterViewInit {
                     );
                     this.updateProgramProgress(channel.xtream_id, epgData[0]);
                     this.cdr.detectChanges();
+                    this.epgLoadRetries.delete(channel.xtream_id); // Reset retry count on success
                 }
             } catch (error) {
-                console.error(
-                    `Failed to load EPG for channel ${channel.xtream_id}:`,
-                    error
-                );
+                console.error(`Failed to load EPG for channel ${channel.name} (ID: ${channel.xtream_id}):`, error);
+                const retries = this.epgLoadRetries.get(channel.xtream_id) || 0;
+                if (retries < this.MAX_EPG_RETRIES) {
+                    this.epgLoadRetries.set(channel.xtream_id, retries + 1);
+                    // Simple immediate retry for demonstration. In a real app, use a delay or backoff.
+                    console.log(`Retrying EPG load for ${channel.name} (Attempt ${retries + 1})`);
+                    this.requestedChannels.delete(channel.xtream_id); // Allow re-request
+                    // Potentially call loadEpgForVisibleChannels again or a specific retry function
+                    // For simplicity here, the next visibility check will re-trigger if still visible.
+                } else {
+                    // Max retries reached, notify user
+                    const message = this.translate.instant('PORTALS.ERROR_VIEW.EPG_LOAD_FAILED_FOR_CHANNEL', { channelName: channel.name });
+                    this.snackBar.open(message, this.translate.instant('CLOSE'), { duration: 3000 });
+                    this.epgLoadRetries.delete(channel.xtream_id); // Reset after max retries
+                }
             }
         }
     }
 
+    private getDebouncedNow(): number {
+        if (this.cachedNow === null) {
+            this.cachedNow = Date.now();
+            if (this.animationFrameId) {
+                cancelAnimationFrame(this.animationFrameId);
+            }
+            this.animationFrameId = requestAnimationFrame(() => {
+                this.cachedNow = null;
+                this.animationFrameId = null;
+            });
+        }
+        return this.cachedNow;
+    }
+
     private updateProgramProgress(streamId: number, program: EpgProgram) {
-        const now = new Date().getTime() / 1000;
+        const now = this.getDebouncedNow() / 1000; // Use debounced time, in seconds
         const start = parseInt(program.start_timestamp);
         const end = parseInt(program.stop_timestamp);
 
@@ -162,11 +197,15 @@ export class PortalChannelsListComponent implements AfterViewInit {
             const elapsed = now - start;
             const progress = (elapsed / duration) * 100;
 
-            this.currentProgramsProgress.set(streamId, progress);
+            this.currentProgramsProgress.set(streamId, Math.min(Math.max(progress, 0), 100)); // Ensure progress is between 0 and 100
             this.programTimings.set(streamId, {
                 start: start * 1000, // Convert to milliseconds for date pipe
                 end: end * 1000, // Convert to milliseconds for date pipe
             });
+        } else {
+            // Optional: Clear progress if program is no longer current
+            this.currentProgramsProgress.delete(streamId);
+            this.programTimings.delete(streamId);
         }
     }
 
@@ -191,5 +230,12 @@ export class PortalChannelsListComponent implements AfterViewInit {
                 }
                 this.cdr.detectChanges();
             });
+    }
+
+    ngOnDestroy(): void {
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
     }
 }

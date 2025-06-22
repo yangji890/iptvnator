@@ -383,14 +383,20 @@ export class AppComponent {
      * Removes all ipc command listeners on component destroy
      */
     ngOnDestroy(): void {
-        if (this.dataService.isElectron) {
-            this.commandsList.forEach((command) =>
-                this.dataService.removeAllListeners(command.id)
-            );
-        } else {
-            this.listeners.forEach((listener) =>
-                window.removeEventListener('message', listener)
-            );
-        }
+    // The listenOn method in both PwaService and TauriService uses window.addEventListener('message', callback)
+    // Therefore, we need to use window.removeEventListener('message', callback) to clean up.
+    // The this.listeners array stores the exact callback references that were passed to addEventListener.
+    this.listeners.forEach((listenerCallback) => {
+        window.removeEventListener('message', listenerCallback);
+    });
+    this.listeners = []; // Clear the array of listeners
+
+    // Note: The original code had an if/else for this.dataService.isElectron.
+    // If a true Electron DataService implementation exists and uses a different listener mechanism
+    // (e.g., ipcRenderer.on/removeListener), that specific DataService implementation would need
+    // its own cleanup, or this ngOnDestroy would need to be adapted if AppComponent
+    // directly managed those electron-specific listeners.
+    // Given the current PwaService and TauriService, the above cleanup is appropriate for them.
+    // The abstract DataService.removeAllListeners(type) is not directly used here for these cases.
     }
 }
