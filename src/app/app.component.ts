@@ -122,10 +122,11 @@ export class AppComponent {
         this.languageDetectionService.detectInitialLanguage().pipe(take(1)).subscribe(lang => {
             this.translate.use(lang);
             // Optionally, update settingsService if it also stores language
-            this.settingsService.getValueFromLocalStorage(STORE_KEY.Settings).pipe(take(1)).subscribe(settings => {
-                const currentSettings = settings || {};
+                this.settingsService.getValueFromLocalStorage(STORE_KEY.Settings).pipe(take(1)).subscribe(settingsValue => {
+                    // Ensure settingsValue is treated as Settings or an empty object for type safety
+                    const currentSettings: Partial<Settings> = settingsValue || {};
                 if (currentSettings.language !== lang) {
-                    this.settingsService.setValueToLocalStorage(STORE_KEY.Settings, {...currentSettings, language: lang });
+                        this.settingsService.setValueToLocalStorage(STORE_KEY.Settings, { ...currentSettings, language: lang } as Settings);
                 }
             });
 

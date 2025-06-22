@@ -54,7 +54,7 @@ export class PlayerService {
                 (selectedItem as any).stream_id || (selectedItem as any).series_id || selectedItem.id,
                 title, // Use the provided title which should be the item name
                 selectedCategory?.id,
-                selectedCategory?.name,
+                selectedCategory?.category_name, // Changed from name to category_name
                 contentType === 'series' ? {
                     season: (selectedItem as any).season, // Assuming season number is available
                     // episode: (selectedItem as any).episode, // Assuming episode number is available on the clicked episode item

@@ -7,7 +7,9 @@
     <button mat-menu-item (click)="switchLanguage(lang.code)">
       <span>{{ lang.name }}</span>
       @if (lang.code === currentLanguage) {
-        <mat-icon class="selected-check">check</mat-icon>
+        <ng-container> <!-- Using ng-container as suggested by the warning -->
+            <mat-icon class="selected-check" aria-label="Selected language">check</mat-icon>
+        </ng-container>
       }
     </button>
   }

@@ -34,4 +34,5 @@ export interface Playlist {
     password?: string;
     macAddress?: string;
     portalUrl?: string;
+    type?: 'm3u' | 'xtream' | 'stalker'; // Added type property
 }

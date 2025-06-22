@@ -4,7 +4,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { CommonModule } from '@angular/common';
-import { LanguageDetectionService } from '../../../services/language-detection.service'; // Import service
+import { LanguageDetectionService } from '../../../services/language-detection.service';
+import { TranslateModule } from '@ngx-translate/core'; // Added import for TranslateModule
 
 interface LanguageOption {
     code: string;
@@ -22,7 +23,7 @@ interface LanguageOption {
         MatButtonModule,
         MatIconModule,
         MatMenuModule,
-        TranslateService, // Import TranslateModule if pipe is used in template directly
+        TranslateModule,
     ],
 })
 export class LanguageSwitcherComponent {

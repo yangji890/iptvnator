@@ -45,7 +45,7 @@ import { DialogService } from '../services/dialog.service';
 import { EpgService } from '../services/epg.service';
 import { PlaylistsService } from '../services/playlists.service';
 import { SettingsStore } from '../services/settings-store.service';
-import { HeaderComponent } from '../shared/components/header/header.component';
+import { HeaderComponent } from '../shared/components/header/header.component'; // Re-added HeaderComponent
 import * as PlaylistActions from '../state/actions';
 import { selectIsEpgAvailable } from '../state/selectors';
 import { SettingsService } from './../services/settings.service';
@@ -60,7 +60,7 @@ import { Theme } from './theme.enum';
     imports: [
         CommonModule,
         FormsModule,
-        HeaderComponent,
+        HeaderComponent, // Re-added HeaderComponent here as well
         MatButtonModule,
         MatCheckboxModule,
         MatDividerModule,

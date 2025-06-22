@@ -48,15 +48,29 @@ export const SettingsStore = signalStore(
             }
         },
 
-        async updateSettings(settings: Partial<Settings>) {
-            // When updating, ensure we save the complete current state of settings from the store
-            // merged with the new partial settings, to avoid losing fields not present in `settings` param.
-            const newSettings = { ...store, ...settings };
-            patchState(store, newSettings); // Update the in-memory store state
-            await firstValueFrom(storage.set(STORE_KEY.Settings, newSettings)); // Persist the complete new state
+        async updateSettings(settingsChanges: Partial<Settings>) {
+            // Create a new state object by taking the current state values and applying changes
+            const newState: Settings = {
+                player: settingsChanges.player ?? store.player(),
+                epgUrl: settingsChanges.epgUrl ?? store.epgUrl(),
+                streamFormat: settingsChanges.streamFormat ?? store.streamFormat(),
+                language: settingsChanges.language ?? store.language(),
+                showCaptions: settingsChanges.showCaptions ?? store.showCaptions(),
+                theme: settingsChanges.theme ?? store.theme(),
+                mpvPlayerPath: settingsChanges.mpvPlayerPath ?? store.mpvPlayerPath(),
+                vlcPlayerPath: settingsChanges.vlcPlayerPath ?? store.vlcPlayerPath(),
+                remoteControl: settingsChanges.remoteControl ?? store.remoteControl(),
+                remoteControlPort: settingsChanges.remoteControlPort ?? store.remoteControlPort(),
+                flowplayerToken: settingsChanges.flowplayerToken ?? store.flowplayerToken(),
+            };
+            patchState(store, newState); // Update the in-memory store state with the full new state
+            await firstValueFrom(storage.set(STORE_KEY.Settings, newState)); // Persist the complete new state
         },
 
         getSettings(): Settings { // Return type changed to Settings
+            // This should ideally return the plain object state, not signals directly
+            // The signalStore itself provides signal accessors like store.player()
+            // This method is more for getting a snapshot if needed outside signal context.
             return {
                 player: store.player(),
                 streamFormat: store.streamFormat(),

@@ -208,6 +208,10 @@ export class XtreamCodeImportComponent implements OnInit {
                     ...this.form.value,
                     serverUrl, // Ensure this is the cleaned base URL
                     type: 'xtream', // Explicitly set type
+                    count: 0, // Default value for count
+                    lastUsage: new Date(Date.now()).toISOString(), // Changed to ISOString
+                    autoRefresh: false, // Default value for autoRefresh
+                    // Ensure all other required Playlist fields have values or are optional
                 } as Playlist,
             })
         );

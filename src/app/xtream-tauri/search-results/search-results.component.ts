@@ -24,7 +24,13 @@ import { MatIcon } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { ActivatedRoute, Router } from '@angular/router';
 import groupBy from 'lodash/groupBy';
-import { debounceTime, Subject, switchMap, takeUntil, tap } from 'rxjs';
+// Removed duplicate RxJS imports, keeping the one with lastValueFrom
+// import { debounceTime, Subject, switchMap, takeUntil, tap } from 'rxjs';
+// import { XtreamItem } from '../../../../shared/xtream-item.interface'; // Duplicate
+// import { DatabaseService } from '../../services/database.service'; // Duplicate
+// import { XtreamStore } from '../xtream.store'; // Duplicate
+import { debounceTime, Subject, switchMap, takeUntil, tap, lastValueFrom } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { XtreamItem } from '../../../../shared/xtream-item.interface';
 import { DatabaseService } from '../../services/database.service';
 import { XtreamStore } from '../xtream.store';
@@ -224,10 +230,11 @@ export class SearchResultsComponent
 
             for (const { action, type } of actionsToFetch) {
                 try {
-                    const items = await this.dataService.fetchData<XtreamItem[]>(
+                    // Removed type argument from fetchData, cast result to XtreamItem[]
+                    const items = (await this.dataService.fetchData(
                         `${serverUrl}/player_api.php`,
                         { username, password, action }
-                    );
+                    )) as XtreamItem[];
 
                     if (items && Array.isArray(items)) {
                         const filteredItems = items.filter(item =>
@@ -239,7 +246,7 @@ export class SearchResultsComponent
                             playlist_id,
                             playlist_name,
                             // Ensure common fields like xtream_id, category_id, poster_url are mapped if names differ
-                            xtream_id: item.stream_id || (item as any).series_id || item.id,
+                            xtream_id: item.stream_id || (item as any).series_id, // Removed item.id fallback
                             category_id: item.category_id,
                             poster_url: item.stream_icon || (item as any).cover || (item as any).icon,
                             title: item.name || (item as any).title,

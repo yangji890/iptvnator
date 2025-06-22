@@ -10,13 +10,10 @@ import {
     ChangeDetectionStrategy,
     inject,
 } from '@angular/core';
-import flowplayer, {
-    FlowplayerInstance,
-    FlowplayerOptions,
-    PlayerEvent,
-    ErrorEvent, // Import ErrorEvent type
-} from '@flowplayer/player';
-import { LoggingService } from '../../../services/logging.service'; // Import LoggingService
+import flowplayer from '@flowplayer/player'; // Keep default import for the function
+// Types seem not to be exported directly, using 'any' for now.
+// import { FlowplayerInstance, FlowplayerOptions, PlayerEvent, ErrorEvent } from '@flowplayer/player';
+import { LoggingService } from '../../../services/logging.service';
 
 // HLS plugin might be needed explicitly if not bundled or auto-loaded by core @flowplayer/player
 // import '@flowplayer/player/dist/plugins/hls.min.js'; // Or specific import if it's a module
@@ -37,7 +34,7 @@ export class FlowplayerComponent implements AfterViewInit, OnDestroy, OnChanges 
 
     @ViewChild('playerContainer') playerContainer!: ElementRef<HTMLDivElement>;
 
-    private player?: FlowplayerInstance;
+    private player?: any; // Changed FlowplayerInstance to any
     private loggingService = inject(LoggingService);
     private loadStartTime: number;
     private playbackStartedSuccessfully = false; // To avoid logging success multiple times on resume
@@ -82,7 +79,7 @@ export class FlowplayerComponent implements AfterViewInit, OnDestroy, OnChanges 
         // Make sure to destroy previous instance if any
         this.destroyPlayer();
 
-        const options: FlowplayerOptions = {
+        const options: any = { // Changed FlowplayerOptions to any
             src: this.streamUrl,
             token: this.token, // Mandatory for Flowplayer
             autoplay: this.autoplay,
@@ -106,46 +103,56 @@ export class FlowplayerComponent implements AfterViewInit, OnDestroy, OnChanges 
         try {
             this.player = flowplayer(this.playerContainer.nativeElement, options);
 
-            // Event listeners for statistics
-            this.player.on(PlayerEvent.READY, (event) => {
+            // Event listeners for statistics using string event names
+            this.player.on('ready', (event: any) => { // Use 'any' for event if specific type isn't available
                 const readyTime = performance.now();
                 const startupTimeMs = Math.round(readyTime - this.loadStartTime);
                 console.log(`Flowplayer Ready. Startup time (to ready): ${startupTimeMs}ms`, event);
-                // This is often too early for "perceived" startup time. PLAYING is better.
             });
 
-            this.player.on(PlayerEvent.PLAYING, (event) => {
+            this.player.on('playing', (event: any) => {
                 if (!this.playbackStartedSuccessfully) {
                     this.playbackStartedSuccessfully = true;
                     const playingTime = performance.now();
                     const startupTimeMs = Math.round(playingTime - this.loadStartTime);
                     console.log(`Flowplayer Playing. Perceived startup time: ${startupTimeMs}ms`, event);
 
-                    // Log successful playback start and startup time
-                    // The initial LogContentView from PlayerService might be too early for startup time.
-                    // We can log an update or a specific performance metric here.
                     this.loggingService.logContentView(
-                        'flowplayer' as any, // content type could be more specific if known here
-                        this.streamUrl, // Using streamUrl as a contentId for this specific log
+                        'flowplayer' as any,
+                        this.streamUrl,
                         this.title || 'Unknown Flowplayer Content',
-                        undefined, undefined, undefined, // category info not directly available here
-                        startupTimeMs // Logging startup time
+                        undefined, undefined, undefined,
+                        startupTimeMs
                     );
-                    // A more refined approach would be to emit an event from here,
-                    // and let a parent/service decide how to log it in conjunction with PlayerService's initial log.
                 }
             });
 
-            this.player.on(PlayerEvent.ERROR, (event, _api, error: ErrorEvent) => {
-                console.error('Flowplayer Error:', error);
-                this.playbackStartedSuccessfully = false; // Mark as not successful on error
+            // Standard HTML5 error event name is 'error'.
+            // Flowplayer's STANDARD_ERROR is flowplayer.events.STANDARD_ERROR
+            // If flowplayer.events is not typed, we might need to use 'error' and inspect the error object.
+            this.player.on('error', (event: any, _api?: any, errorDetails?: any) => {
+                // The 'error' event for HTMLMediaElement usually just gives a simple event.
+                // For more detailed errors, Flowplayer might have a specific error structure
+                // passed to the callback, or through a more specific event like 'standardError'.
+                // For now, logging what we get.
+                const err = errorDetails || this.player?.engine?.error || event; // Try to get more specific error
+                console.error('Flowplayer Error:', err);
+                this.playbackStartedSuccessfully = false;
 
-                // Log playback failure
-                // Ideally, we'd get more context about the content from inputs if not already logged by PlayerService
+                let errorMessage = 'Unknown Flowplayer Error';
+                if (err && err.code) { // Standard MediaError codes
+                    errorMessage = `Error Code: ${err.code}`;
+                    if (err.message) errorMessage += ` - ${err.message}`;
+                } else if (err && err.message) {
+                    errorMessage = err.message;
+                } else if (typeof err === 'string') {
+                    errorMessage = err;
+                }
+
                 this.loggingService.logContentView(
                     'flowplayer-error' as any,
-                     this.streamUrl,
-                    `ERROR: ${this.title || 'Unknown Flowplayer Content'} - Code: ${error.code} - ${error.message}`,
+                    this.streamUrl,
+                    `ERROR: ${this.title || 'Unknown Flowplayer Content'} - ${errorMessage}`,
                 );
             });
 
