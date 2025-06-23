@@ -23,10 +23,13 @@ export class AppConfigService {
         console.log('AppConfigService: loadAppConfig() CALLED AND STARTED'); // Explicit start log
         let loadedConfig: AppEnvConfig | null = null;
         try {
-            loadedConfig = await lastValueFrom(this.http.get<AppEnvConfig>('/assets/config.json'));
-            console.log('AppConfigService: Successfully loaded /assets/config.json:', loadedConfig);
+            // TEMPORARY DEBUGGING: Use absolute URL to load config.json
+            const configUrl = 'http://165.154.255.7/assets/config.json';
+            console.log('AppConfigService: Attempting to load config from absolute URL:', configUrl);
+            loadedConfig = await lastValueFrom(this.http.get<AppEnvConfig>(configUrl));
+            console.log('AppConfigService: Successfully loaded from absolute URL:', loadedConfig);
         } catch (error) {
-            console.warn('AppConfigService: Failed to load /assets/config.json. Will use default/fallback.', error);
+            console.warn('AppConfigService: Failed to load from absolute URL. Will use default/fallback.', error);
             loadedConfig = { BACKEND_URL: DEFAULT_DEV_BACKEND_URL };
         }
 
